@@ -1,46 +1,46 @@
 # The Bootstrap Process
 
-So George's request for `/about-us` has been handed to Drupal, and `index.php` is ready to bootstrap Drupal. What does that mean?
+So George's request for `/about-us` has been handed to Backdrop, and `index.php` is ready to bootstrap Backdrop. What does that mean?
 
 ## A quick summary
 
-At a code level, we're talking about the [`drupal_bootstrap`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_bootstrap/7) function, which lets you pass in a parameter to tell it which level of bootstrap you need. In almost all cases, we want a "full" bootstrap, which usually means "this is a regular page request, nothing weird, so just give me everything."
+At a code level, we're talking about the [`backdrop_bootstrap`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_bootstrap/1) function, which lets you pass in a parameter to tell it which level of bootstrap you need. In almost all cases, we want a "full" bootstrap, which usually means "this is a regular page request, nothing weird, so just give me everything."
 
-What is "everything"? I'm glad you asked. All of the possible values for the parameter for `drupal_bootstrap()` are listed below. Note that they are run sequentially, meaning if you call it with `DRUPAL_BOOTSTRAP_CONFIGURATION` then it will only do that one (#1), but if you call it with `DRUPAL_BOOTSTRAP_SESSION` then it will do that one (#5) and all of the ones before it (#1-4). And since `DRUPAL_BOOTSTRAP_FULL` is last, calling it gives you everything in this list.
+What is "everything"? I'm glad you asked. All of the possible values for the parameter for `backdrop_bootstrap()` are listed below. Note that they are run sequentially, meaning if you call it with `BACKDROP_BOOTSTRAP_CONFIGURATION` then it will only do that one (#1), but if you call it with `BACKDROP_BOOTSTRAP_SESSION` then it will do that one (#5) and all of the ones before it (#1-4). And since `BACKDROP_BOOTSTRAP_FULL` is last, calling it gives you everything in this list.
 
-1. `DRUPAL_BOOTSTRAP_CONFIGURATION`: Set up some configuration
-2. `DRUPAL_BOOTSTRAP_PAGE_CACHE`: Try to serve the page from the cache (in which case the rest of these steps don't run)
-3. `DRUPAL_BOOTSTRAP_DATABASE`: Initialize the database connection
-4. `DRUPAL_BOOTSTRAP_VARIABLES`: Load variables from the `variables` table
-5. `DRUPAL_BOOTSTRAP_SESSION`: Initialize the user's session
-6. `DRUPAL_BOOTSTRAP_PAGE_HEADER`: Set HTTP headers to prepare for a page response
-7. `DRUPAL_BOOTSTRAP_LANGUAGE`: Initialize language types for multilingual sites
-8. `DRUPAL_BOOTSTRAP_FULL`: Includes a bunch of other files and does some other miscellaneous setup.
+1. `BACKDROP_BOOTSTRAP_CONFIGURATION`: Set up some configuration
+2. `BACKDROP_BOOTSTRAP_PAGE_CACHE`: Try to serve the page from the cache (in which case the rest of these steps don't run)
+3. `BACKDROP_BOOTSTRAP_DATABASE`: Initialize the database connection
+4. `BACKDROP_BOOTSTRAP_VARIABLES`: Load variables from the `variables` table
+5. `BACKDROP_BOOTSTRAP_SESSION`: Initialize the user's session
+6. `BACKDROP_BOOTSTRAP_PAGE_HEADER`: Set HTTP headers to prepare for a page response
+7. `BACKDROP_BOOTSTRAP_LANGUAGE`: Initialize language types for multilingual sites
+8. `BACKDROP_BOOTSTRAP_FULL`: Includes a bunch of other files and does some other miscellaneous setup.
 
 Each of these are defined in more detail below.
 
-## 1. `DRUPAL_BOOTSTRAP_CONFIGURATION`
+## 1. `BACKDROP_BOOTSTRAP_CONFIGURATION`
 
-This guy just calls [`_drupal_bootstrap_configuration()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/_drupal_bootstrap_configuration/7), which in turn does the following:
+This guy just calls [`_backdrop_bootstrap_configuration()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/_backdrop_bootstrap_configuration/1), which in turn does the following:
 
 ### Sets error and exception handlers.
 
 ```php
-set_error_handler('_drupal_error_handler');
-set_exception_handler('_drupal_exception_handler');
+set_error_handler('_backdrop_error_handler');
+set_exception_handler('_backdrop_exception_handler');
 ```
 
-These lines set a custom error handler ([`_drupal_error_handler()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/_drupal_error_handler/7)) and a custom exception handler ([`_drupal_exception_handler`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/_drupal_error_handler/7)) respectively. That means that those functions are called when Drupal encounters a PHP error or exception.
+These lines set a custom error handler ([`_backdrop_error_handler()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/_backdrop_error_handler/1)) and a custom exception handler ([`_backdrop_exception_handler`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/_backdrop_exception_handler/1)) respectively. That means that those functions are called when Backdrop encounters a PHP error or exception.
 
 These functions each go a few levels deep, but all they're really doing is attempting to log any errors or exceptions that may occur, and then throw a `500 Service unavailable` response.
 
 ### Initializes the PHP environment
 
 ```php
-drupal_environment_initialize()
+backdrop_environment_initialize()
 ```
 
-The [`drupal_environment_initialize()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_environment_initialize/7) function called here does a lot, most of which isn't very interesting. For example: 
+The [`backdrop_environment_initialize()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_environment_initialize/1) function called here does a lot, most of which isn't very interesting. For example: 
 
 - It tinkers with the global `$_SERVER` array a little bit.
 - It sets the configuration for error reporting
@@ -54,9 +54,9 @@ That said, it does have this nugget:
 $_GET ['q'] = request_path();
 ```
 
-It might not look like much, but this is what makes Clean URLs work. We always need `$_GET['q']` to be set to the current path because `$_GET['q']` is used all over the place. If you have Clean URLs disabled, then that happens by default, because your URLs look like `yoursite.com/?q=about-us`. So the line of code above will call [`request_path()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/request_path/7), which sees that `$_GET['q']` already exists, and returns it directly. 
+It might not look like much, but this is what makes Clean URLs work. We always need `$_GET['q']` to be set to the current path because `$_GET['q']` is used all over the place. If you have Clean URLs disabled, then that happens by default, because your URLs look like `yoursite.com/?q=about-us`. So the line of code above will call [`request_path()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/request_path/1), which sees that `$_GET['q']` already exists, and returns it directly. 
 
-But if you have Clean URLs enabled (you do, right?), and your URLs look like `yoursite.com/about-us`, then `$_GET['q']` is empty by default, and that just won't do. To fix that, it gets populated with the value of [`request_path()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/request_path/7), which basically just cleans up the result of `$_SERVER['REQUEST_URI']` (i.e., removes query strings as well as script filenames such as `index.php` or `cron.php`) and returns that.
+But if you have Clean URLs enabled (you do, right?), and your URLs look like `yoursite.com/about-us`, then `$_GET['q']` is empty by default, and that just won't do. To fix that, it gets populated with the value of [`request_path()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/request_path/1), which basically just cleans up the result of `$_SERVER['REQUEST_URI']` (i.e., removes query strings as well as script filenames such as `index.php` or `cron.php`) and returns that.
 
 ### Starts a timer
 
@@ -64,38 +64,38 @@ But if you have Clean URLs enabled (you do, right?), and your URLs look like `yo
 timer_start('page');
 ```
 
-This is actually pretty nifty. Drupal has a global `$timers` variable that many people don't know about. 
+This is actually pretty nifty. Backdrop has a global `$timers` variable that many people don't know about. 
 
 Here, a timer is started so that the time it takes to render the page can be measured.
 
 ### Initializes some critical settings
 
 ```php
-drupal_settings_initialize();
+backdrop_settings_initialize();
 ```
 
-The [`drupal_settings_initialize()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_settings_initialize/7) function is super important, for at least 3 reasons:
+The [`backdrop_settings_initialize()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_settings_initialize/1) function is super important, for at least 3 reasons:
 
 1. It includes the all-important `settings.php` file which contains our database connection info (which isn't used yet), among other things.
 2. It creates many of our favorite global variables, such as `$cookie_domain`, `$conf`, `$is_https`, and more!
-3. It sets the name of the session cookie. PHP, by default, stores the session id in a cookie named PHPSESSID. Drupal instead builds a cookie name that starts with the substring SESS and ends with a hash of the cookie domain.
+3. It sets the name of the session cookie. PHP, by default, stores the session id in a cookie named PHPSESSID. Backdrop instead builds a cookie name that starts with the substring SESS and ends with a hash of the cookie domain.
 
 And that's the end of the CONFIGURATION bootstrap. 1 down, 7 to go!
 
-## 2. `DRUPAL_BOOTSTRAP_PAGE_CACHE`
+## 2. `BACKDROP_BOOTSTRAP_PAGE_CACHE`
 
-When bootstrapping the page cache, everything happens inside [`_drupal_bootstrap_page_cache()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/_drupal_bootstrap_page_cache/7) which does a lot of work.
+When bootstrapping the page cache, everything happens inside [`_backdrop_bootstrap_page_cache()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/_backdrop_bootstrap_page_cache/1) which does a lot of work.
 
 ### Includes cache.inc and any custom cache backends
 
 ```php
-require_once DRUPAL_ROOT . '/includes/cache.inc';
-foreach (variable_get('cache_backends', array()) as $include) {
-  require_once DRUPAL_ROOT . '/' . $include;
+require_once BACKDROP_ROOT . '/core/includes/cache.inc';
+foreach (settings_get('cache_backends', array()) as $include) {
+  require_once BACKDROP_ROOT . '/' . $include;
 }
 ```
 
-This bit of fanciness allows us to specify our own cache backend(s) instead of using Drupal's database cache. 
+This bit of fanciness allows us to specify our own cache backend(s) instead of using Backdrop's database cache. 
 
 This is most commonly used to support memcache, but someone could really go to town with this if they wanted, just by specifying (in the `$conf` array in `settings.php`) an include file to use (such as `memcache.inc`) for whatever cache backend they're wanting to use.
 
@@ -103,16 +103,16 @@ This is most commonly used to support memcache, but someone could really go to t
 
 ```php
 // Check for a cache mode force from settings.php.
-if (variable_get('page_cache_without_database')) {
+if (settings_get('page_cache_without_database')) {
   $cache_enabled = TRUE;
 }
 else {
-  drupal_bootstrap(DRUPAL_BOOTSTRAP_VARIABLES, FALSE);
-  $cache_enabled = variable_get('cache');
+  backdrop_bootstrap(BACKDROP_BOOTSTRAP_VARIABLES, FALSE);
+  $cache_enabled = settings_get('cache');
 }
 ```
 
-You'll note that the first line there gives you a way to enable cache from `settings.php` directly. This speeds things up because that way it doesn't need to bootstrap `DRUPAL_BOOTSTRAP_VARIABLES` (i.e., load all of the variables from the DB table) which would also force it to bootstrap `DRUPAL_BOOTSTRAP_DATABASE`, which is a requirement for fetching the variables from the database, all just to see if the cache is enabled.
+You'll note that the first line there gives you a way to enable cache from `settings.php` directly. This speeds things up because that way it doesn't need to bootstrap `BACKDROP_BOOTSTRAP_VARIABLES` (i.e., load all of the variables from the DB table) which would also force it to bootstrap `BACKDROP_BOOTSTRAP_DATABASE`, which is a requirement for fetching the variables from the database, all just to see if the cache is enabled.
 
 So assuming you don't have `$conf['page_cache_without_database'] = TRUE` in your `settings.php` file, then we will be bootstrapping the variables here, which in turn bootstraps the database. Both of those will be talked about in more info in a minute.
 
@@ -122,11 +122,13 @@ So assuming you don't have `$conf['page_cache_without_database'] = TRUE` in your
 drupal_block_denied(ip_address());
 ```
 
+**NOTE** Removed from Backdrop.
+
 This does exactly what you'd expect - checks to see if the user's IP address is in the list of blacklisted addresses, and if so, returns a `403 Forbidden` response. This doesn't strictly have anything to do with caching, except for the fact that it needs to block cached responses from blacklisted users and this is its last chance to do that.
 
-An interesting thing to note here is that the [`ip_address()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/ip_address/7) function is super useful. On a normal site it just returns regular old `$_SERVER['REMOTE_ADDR']`, but if you're using some sort of reverse proxy in front of Drupal (meaning `$_SERVER['REMOTE_ADDR']` will always be the same), then it fetches the user's IP from the (configurable) HTTP header. Pretty awesome. 
+An interesting thing to note here is that the [`ip_address()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/ip_address/1) function is super useful. On a normal site it just returns regular old `$_SERVER['REMOTE_ADDR']`, but if you're using some sort of reverse proxy in front of Backdrop (meaning `$_SERVER['REMOTE_ADDR']` will always be the same), then it fetches the user's IP from the (configurable) HTTP header. Pretty awesome. 
 
-But beware that if you have `$conf['page_cache_without_database'] = TRUE` in `settings.php` then it won't fetch blocked IPs from the database, because it wouldn't have bootstrapped `DRUPAL_BOOTSTRAP_VARIABLES` yet (re-read the previous section to see what I mean). Tricky, tricky!
+But beware that if you have `$conf['page_cache_without_database'] = TRUE` in `settings.php` then it won't fetch blocked IPs from the database, because it wouldn't have bootstrapped `BACKDROP_BOOTSTRAP_VARIABLES` yet (re-read the previous section to see what I mean). Tricky, tricky!
 
 ### Checks to see if there's a session cookie
 
@@ -144,28 +146,28 @@ What's inside that "fetch and return cached response" block? Lots of stuff!
 ### Populates the global $user object
 
 ```php
-$user = drupal_anonymous_user();
+$user = backdrop_anonymous_user();
 ```
 
-The [`drupal\_anonymous\_user()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_anonymous_user/7) function just creates an empty user object with a `uid` of 0.  We're creating it here just because it may need to be used later on down the line, such as in some `hook\_boot()` implementation, and also because its timestamp will be checked and possibly logged.
+The [`backdrop_anonymous\_user()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_anonymous_user/1) function just creates an empty user object with a `uid` of 0.  We're creating it here just because it may need to be used later on down the line, such as in some `hook_boot()` implementation, and also because its timestamp will be checked and possibly logged.
 
 ### Checks to see if the page is already cached
 
 ```php
-$cache = drupal_page_get_cache();
+$cache = backdrop_page_get_cache();
 ```
 
-The [`drupal\_page\_get\_cache()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_page_get_cache/7) function is actually simpler than you'd think. It just checks to see if the page is cacheable (i.e., if the request method is either `GET` or `HEAD`, as told in [`drupal_page_is_cacheable()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_page_is_cacheable/7)), and if so, it runs `cache_get()` with the current URL against the `cache_page` database table, to fetch the cache, if there is one.
+The [`backdrop_page_get_cache()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_page_get_cache/1) function is actually simpler than you'd think. It just checks to see if the page is cacheable (i.e., if the request method is either `GET` or `HEAD`, as told in [`backdrop_page_is_cacheable()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_page_is_cacheable/1)), and if so, it runs `cache_get()` with the current URL against the `cache_page` database table, to fetch the cache, if there is one.
 
-An interesting situation occurs in a single sign on scenario. When the user is logged into the master site, but is visiting a particular Drupal site in the site family for the first time, that user will not have a session cookie on that particular site. This situation is one of the major use cases for hook\_boot(), which is invoked immediately prior to trying to serve the cached page.
+An interesting situation occurs in a single sign on scenario. When the user is logged into the master site, but is visiting a particular Backdrop site in the site family for the first time, that user will not have a session cookie on that particular site. This situation is one of the major use cases for `hook_boot()`, which is invoked immediately prior to trying to serve the cached page.
 
 ```
-      if (variable_get('page_cache_invoke_hooks', TRUE)) {
+      if (settings_get('page_cache_invoke_hooks', TRUE)) {
         bootstrap_invoke_all('boot');
       }
 ```
 
-Your particular implementation of hook\_boot() can test for a shared cookie (or other condition like a header injected by a proxy), and then force Drupal to continue with a full bootstrap. See the implementation in the bakery conrib module for a good example of this.
+Your particular implementation of hook_boot() can test for a shared cookie (or other condition like a header injected by a proxy), and then force Backdrop to continue with a full bootstrap. See the implementation in the bakery conrib module for a good example of this.
 We'll take a deeper look at this function once we get to the module
 chapter.
 
@@ -173,69 +175,68 @@ chapter.
 
 If `$cache` from the previous section isn't empty, then we have officially found ourselves a valid page cache for the current page, and we can return it and shut down. This block of code does a few things:
 
-- Sets the page title using [`drupal_set_title()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_set_title/7)
-- Sets a HTTP header: `X-Drupal-Cache: HIT`
+- Sets the page title using [`backdrop_set_title()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_set_title/1)
+- Sets a HTTP header: `X-Backdrop-Cache: HIT`
 - Sets PHP's default timezone to the site's default timezone (from `variable_get('date_default_timezone')`)
 - Runs all implementations of `hook_boot()`, if the `page_cache_invoke_hooks` variable isn't set to FALSE.
-- Serves the page from cache, using [`drupal_serve_page_from_cache($cache)`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_serve_page_from_cache/7), which is scary looking but basically just adds some headers and prints the cache data (i.e., the page body).
+- Serves the page from cache, using [`backdrop_serve_page_from_cache($cache)`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_serve_page_from_cache/1), which is scary looking but basically just adds some headers and prints the cache data (i.e., the page body).
 - Runs all implementations of `hook_exit()`, if the `page_cache_invoke_hooks` variable isn't set to FALSE.
 
 And FINALLY, once all of that is complete, it runs `exit;` and we're done, assuming we got this far. 
 
-Otherwise, it doesn't do any of the above, and just sets the `X-Drupal-Cache: MISS` header.
+Otherwise, it doesn't do any of the above, and just sets the `X-Backdrop-Cache: MISS` header.
 
 Whew. That's a lot of stuff. Luckily, the next section is easier.
 
-## 3. `DRUPAL_BOOTSTRAP_DATABASE`
+## 3. `BACKDROP_BOOTSTRAP_DATABASE`
 
-We're not going to get super in the weeds with everything Drupal does with the database here, since that deserves its own chapter, but here's an overview of the parts that happen while bootstrapping, within the [`_drupal_bootstrap_database()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/_drupal_bootstrap_database/7) function.
+We're not going to get super in the weeds with everything Backdrop does with the database here, since that deserves its own chapter, but here's an overview of the parts that happen while bootstrapping, within the [`_backdrop_bootstrap_database()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/_backdrop_bootstrap_database/1) function.
 
 ### Checks to see if we have a database configured
 
 ```php
-if (empty($GLOBALS ['databases']) && !drupal_installation_attempted()) {
-  include_once DRUPAL_ROOT . '/includes/install.inc';
+if (empty($GLOBALS ['databases']) && !backdrop_installation_attempted()) {
+  include_once BACKDROP_ROOT . '/core/includes/install.inc';
   install_goto('install.php');
 }
 ```
 
-Nothing fancy. If we don't have anything in `$GLOBALS ['databases']` and we haven't already started the installation process, then we get booted to `/install.php` since Drupal is assuming we need to install the site.
+Nothing fancy. If we don't have anything in `$GLOBALS ['databases']` and we haven't already started the installation process, then we get booted to `/install.php` since Backdrop is assuming we need to install the site.
 
 ### Includes the `database.inc` file
 
-This beautiful beautiful [`database.inc`](https://api.drupal.org/api/drupal/includes%21database%21database.inc/7) file includes all of the database abstraction functions that we know and love, such as `db_query()` and `db_select()` and `db_update()`. 
+This beautiful beautiful [`database.inc`](https://docs.backdropcms.org/api/backdrop/core%21includes%21database%21database.inc/1) file includes all of the database abstraction functions that we know and love, such as `db_query()` and `db_select()` and `db_update()`. 
 
 It also holds the base `Database` and `DatabaseConnection` and `DatabaseTransaction` classes (among a bunch of others).
 
-It's a 3000+ line file, so it's out of scope for a discussion on bootstrapping, and we'll get back to "How Drupal Does Databases" in a later chapter.
+It's a 3000+ line file, so it's out of scope for a discussion on bootstrapping, and we'll get back to "How Backdrop Does Databases" in a later chapter.
 
 ### Registers autoload functions for classes and interfaces
 
 ```php
-spl_autoload_register('drupal_autoload_class');
-spl_autoload_register('drupal_autoload_interface');
+spl_autoload_register('backdrop_autoload');
 ```
 
-This is just a tricky way of ensuring that a class or interface actually exists, when we try to autoload one. Both [`drupal_autoload_class()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_autoload_class/7) and [`drupal_autoload_interface()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_autoload_interface/7) just call [`registry_check_code()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/_registry_check_code/7), which looks for the given class or interface first in the `cache_bootstrap` table, then `registry` table if no cache is found. 
+This is just a tricky way of ensuring that a class or interface actually exists, when we try to autoload one. [`backdrop_autoload()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_autoload/1) calls [`hook_autoload_info()`](https://docs.backdropcms.org/api/backdrop/core%21modules%21system%21system.api.php/function/hook_autoload_info/1), which loads all classes and interfaces defined in that hook across all enabled modules. 
 
-If it finds the class or interface, it will `require_once` the file that contains that class or interface and return `TRUE`. Otherwise, it just returns `FALSE` so Drupal knows that somebody screwed the pooch and we're looking for a class or interface that doesn't exist.
+If it finds the class or interface, it will `require_once` the file that contains that class or interface and return `TRUE`. Otherwise, it just returns `FALSE` so Backdrop knows that somebody screwed the pooch and we're looking for a class or interface that doesn't exist.
 
 So, in English, it's saying "*Ok, it looks like you're trying to autoload a class or an interface, so I'll figure out which file it's in by checking the cache or the registry database table, and then include that file, if I can find it.*"
 
-## 4. `DRUPAL_BOOTSTRAP_VARIABLES`
+## 4. `BACKDROP_BOOTSTRAP_VARIABLES`
 
-This one just calls [`_drupal_bootstrap_variables()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/_drupal_bootstrap_variables/7), which actually does a good bit more than just including the variables from the variables table. 
+This one just calls [`_backdrop_bootstrap_variables()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/_backdrop_bootstrap_variables/1), which actually does a good bit more than just including the variables from the variables table. 
 
 Here's what it does:
 
 ### Initializes the locking system
 
 ```php
-require_once DRUPAL_ROOT . '/' . variable_get('lock_inc', 'includes/lock.inc');
+require_once BACKDROP_ROOT . '/' . settings_get('lock_inc', 'core/includes/lock.inc');
 lock_initialize();
 ```
 
-Drupal's locking system allows us to create arbitrary locks on certain operations, to prevent race conditions and other bad things. If you're interested to read more about this, there is a very good [API page about it](https://api.drupal.org/api/drupal/includes!lock.inc/group/lock/7).
+Backdrop's locking system allows us to create arbitrary locks on certain operations, to prevent race conditions and other bad things. If you're interested to read more about this, there is a very good [API page about it](https://docs.backdropcms.org/api/backdrop/core%21includes%21lock.inc/group/lock/1).
 
 The two lines of code here don't actually acquire any locks, they just initialize the locking system so that later code can use it. In fact, it's actually used in the very next section, which is why it's initialized in this seemingly unrelated phase of the bootstrap process.
 
@@ -259,13 +260,13 @@ But there are a few important details:
 ### Load all "bootstrap mode" modules
 
 ```php
-require_once DRUPAL_ROOT . '/includes/module.inc';
+require_once BACKDROP_ROOT . '/core/includes/module.inc';
 module_load_all(TRUE);
 ```
 
-Note that this may seem scary (OH MY GOD we're loading every single module just to bootstrap the variables!) but it's not. That `TRUE` is a big deal, because that tells Drupal to only load the "bootstrap" modules. A "bootstrap" module is a module that has the `bootstrap` column in the `system` table set to 1 for it. 
+Note that this may seem scary (OH MY GOD we're loading every single module just to bootstrap the variables!) but it's not. That `TRUE` is a big deal, because that tells Backdrop to only load the "bootstrap" modules. A "bootstrap" module is a module that has the `bootstrap` column in the `system` table set to 1 for it. 
 
-On the typical Drupal site, this will only be a handful of modules that are specifically required this early in the bootstrap, like the Syslog module or the System module, or some contrib modules like Redirect or Variable.
+On the typical Backdrop site, this will only be a handful of modules that are specifically required this early in the bootstrap, like the Syslog module or the System module, or some contrib modules like Redirect or Variable.
 
 ### Sanitize the `destination` URL parameter
 
@@ -273,45 +274,47 @@ Here's another one that you wouldn't expect to happen as part of bootstrapping v
 
 The `$_GET['destination']` parameter needs to be protected against open redirect attacks leading to other domains. So what we do here is to check to see if it's set to an external URL, and if so, we unset it. 
 
-The reason we have to wait for the variables bootstrap for this is that we need to call the [`url_is_external()`](https://api.drupal.org/api/drupal/includes%21common.inc/function/url_is_external/7) function to check the destination URL, and that function calls [`drupal_strip_dangerous_protocols()`](https://api.drupal.org/api/drupal/includes%21common.inc/function/drupal_strip_dangerous_protocols/7) which has a variable to store the list of allowed protocols.
+The reason we have to wait for the variables bootstrap for this is that we need to call the [`url_is_external()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21common.inc/function/url_is_external/1) function to check the destination URL, and that function calls [`backdrop_strip_dangerous_protocols()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21common.inc/function/backdrop_strip_dangerous_protocols/1) which has a variable to store the list of allowed protocols.
 
-## 5. `DRUPAL_BOOTSTRAP_SESSION`
+## 5. `BACKDROP_BOOTSTRAP_SESSION`
 
-Bootstrapping the session means requiring the `session.inc` file and then running [`drupal_session_initialize()`](https://api.drupal.org/api/drupal/includes%21session.inc/function/drupal_session_initialize/7), which is a pretty fun function.
+Bootstrapping the session means requiring the `session.inc` file and then running [`backdrop_session_initialize()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21session.inc/function/backdrop_session_initialize/1), which is a pretty fun function.
 
 ### Register custom session handlers
 
-The first thing that happens here is that Drupal registers custom session handlers with PHP:
+The first thing that happens here is that Backdrop registers custom session handlers with PHP:
 
 ```php
-session_set_save_handler('_drupal_session_open', '_drupal_session_close', 
-  '_drupal_session_read', '_drupal_session_write', 
-  '_drupal_session_destroy', '_drupal_session_garbage_collection');
+session_set_save_handler('_backdrop_session_open', '_backdrop_session_close', 
+  '_backdrop_session_read', '_backdrop_session_write', 
+  '_backdrop_session_destroy', '_backdrop_session_garbage_collection');
 ```
 
-If you've never seen the [`session_set_save_handler()`](http://php.net/session_set_save_handler) PHP function before, it just allows you to set your own custom session storage functions, so that you can have full control over what happens when sessions are opened, closed, read, written, destroyed, or garbage collected. As you can see above, Drupal implements its own handlers for all 6 of those.
+**NOTE: this is now handled with a session class as required by PHP 8.4 and higher.**
 
-What does Drupal actually do in those 6 handler functions? 
+If you've never seen the [`session_set_save_handler()`](http://php.net/session_set_save_handler) PHP function before, it just allows you to set your own custom session storage functions, so that you can have full control over what happens when sessions are opened, closed, read, written, destroyed, or garbage collected. As you can see above, Backdrop implements its own handlers for all 6 of those.
 
-- `_drupal_session_open()` and `_drupal_session_close()` both literally just `return TRUE;`.
-- `_drupal_session_read()` fetches the session from the `sessions` table, and does a join on the `users` table to include the user data along with it.
-- `_drupal_session_write()` checks to see if the session has been updated in the current page request or more than 180 seconds have passed since the last update, and if so, it gathers up session data and drops it into the `sessions` table with a `db_merge()`.
-- `_drupal_session_destroy()` just deletes the appropriate row from the `sessions` DB table, sets the global `$user` object to be the anonymous user, and deletes cookies.
-- `_drupal_session_garbage_collection()` deletes all sessions from the `sessions` table that are older than whatever the max lifetime is set to in PHP (i.e., whatever `session.gc_maxlifetime` is set to).
+What does Backdrop actually do in those 6 handler functions? 
+
+- `_backdrop_session_open()` and `_backdrop_session_close()` both literally just `return TRUE;`.
+- `_backdrop_session_read()` fetches the session from the `sessions` table, and does a join on the `users` table to include the user data along with it.
+- `_backdrop_session_write()` checks to see if the session has been updated in the current page request or more than 180 seconds have passed since the last update, and if so, it gathers up session data and drops it into the `sessions` table with a `db_merge()`.
+- `_backdrop_session_destroy()` just deletes the appropriate row from the `sessions` DB table, sets the global `$user` object to be the anonymous user, and deletes cookies.
+- `_backdrop_session_garbage_collection()` deletes all sessions from the `sessions` table that are older than whatever the max lifetime is set to in PHP (i.e., whatever `session.gc_maxlifetime` is set to).
 
 ### If we already have a session cookie, then start the session
 
-We then check to see if there's a valid session cookie in `$_COOKIE[session_name()]`, and if so, we run the [`drupal_session_start()`](https://api.drupal.org/api/drupal/includes%21session.inc/function/drupal_session_start/7). If you're a PHP developer and you just want to know where `session_start()` happens, then you've found it.
+We then check to see if there's a valid session cookie in `$_COOKIE[session_name()]`, and if so, we run the [`backdrop_session_start()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21session.inc/function/backdrop_session_start/1). If you're a PHP developer and you just want to know where `session_start()` happens, then you've found it.
 
-That's basically all that `drupal_session_start()` does, besides making sure that we're not a command line client and we haven't already started the session.
+That's basically all that `backdrop_session_start()` does, besides making sure that we're not a command line client and we haven't already started the session.
 
 ### Disable page cache for this request
 
-Remember back in the `DRUPAL_BOOTSTRAP_PAGE_CACHE` section where I said that authenticated users don't get cached pages (unless you use something outside of Drupal core)? This is the part that makes that happen.
+Remember back in the `BACKDROP_BOOTSTRAP_PAGE_CACHE` section where I said that authenticated users don't get cached pages (unless you use something outside of Backdrop core)? This is the part that makes that happen.
 
 ```php
 if (!empty($user->uid) || !empty($_SESSION)) {
-  drupal_page_is_cacheable(FALSE);
+  backdrop_page_is_cacheable(FALSE);
 }
 ```
 
@@ -319,13 +322,13 @@ So if we have a session or a nonzero user ID, then we mark this page as uncachea
 
 ### If we don't already have a session cookie, lazily start one
 
-This part's tricky. Drupal lazily starts sessions at the end of the request, so all the bootstrap process has to do is create a session ID and tell $_COOKIE about it, so that it can get picked up at the end.
+This part's tricky. Backdrop lazily starts sessions at the end of the request, so all the bootstrap process has to do is create a session ID and tell $_COOKIE about it, so that it can get picked up at the end.
 
 ```php
-session_id(drupal_random_key());
+session_id(backdrop_random_key());
 ```
 
-I won't go in detail here since we're talking about the bootstrap, but at the end of the request, `drupal_page_footer()` or `drupal_exit()` (depending on which one is responsible for closing this particular request) will call [`drupal_session_commit()`](https://api.drupal.org/api/drupal/includes%21session.inc/function/drupal_session_commit/7), which checks to see if there's anything in $_SESSION that we need to save to the database, and will run `drupal_session_start()` if so.
+I won't go in detail here since we're talking about the bootstrap, but at the end of the request, `backdrop_page_footer()` or `backdrop_exit()` (depending on which one is responsible for closing this particular request) will call [`drupal_session_commit()`](https://api.drupal.org/api/drupal/includes%21session.inc/function/drupal_session_commit/7), which checks to see if there's anything in $_SESSION that we need to save to the database, and will run `drupal_session_start()` if so.
 
 ### Sets PHP's default timezone from the user's timezone
 
@@ -337,7 +340,7 @@ You may remember that the cache bootstrap above was responsible for setting the 
 
 The [`drupal_get_user_timezone()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_get_user_timezone/7) is very simple. It just checks to see if user-configurable timezones are enabled and the user has one set, and uses that if so, otherwise it falls back to the site's default timezone setting.
 
-## 6. `DRUPAL_BOOTSTRAP_PAGE_HEADER`
+## 6. `BACKDROP_BOOTSTRAP_PAGE_HEADER`
 
 This is probably the simplest of the bootstrap levels. It does 2 very simple things in the [`_drupal_bootstrap_page_header()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/_drupal_bootstrap_page_header/7) function.
 
@@ -356,7 +359,7 @@ There's a little bit of a call stack here. `drupal_page_header()` calls `drupal_
 Note that in this run, it just sends a couple default headers (`Expires` and `Cache-Control`), but the interesting part is that static caches are used throughout, and anything can call [`drupal_add_http_header()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_add_http_header/7) later on down the line, which will also call `drupal_send_headers()`. This allows you to append or replace existing headers before they actually get sent anywhere.
 
 
-## 7. `DRUPAL_BOOTSTRAP_LANGUAGE`
+## 7. `BACKDROP_BOOTSTRAP_LANGUAGE`
 
 In this level, the [`drupal_language_initialize()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_language_initialize/7) function is called. This function only really does anything if we're talking about a multilingual site. It checks `drupal_multilingual()` which just returns `TRUE` if the list of languages is greater than 1, and false otherwise.
 
@@ -366,27 +369,27 @@ If it is a multilingual site, then it initializes the system using `language_ini
 
 This is a good time to note that the language system is complicated and confusing, with a web of "language types" (such as `LANGUAGE_TYPE_INTERFACE` and `LANGUAGE_TYPE_CONTENT`) and "language providers", and of course actual languages. It deserves a chapter of its own, so I'm not going to go into any more detail here.
 
-## 8. `DRUPAL_BOOTSTRAP_FULL`
+## 8. `BACKDROP_BOOTSTRAP_FULL`
 
-And we have landed. Now that we already have the building blocks like a database and a session and configuration, we can add All Of The Other Things. We require the common.inc file and its [`_drupal_bootstrap_full()`](https://api.drupal.org/api/drupal/includes%21common.inc/function/_drupal_bootstrap_full/7) function does just that.
+And we have landed. Now that we already have the building blocks like a database and a session and configuration, we can add All Of The Other Things. We require the common.inc file and its [`_backdrop_bootstrap_full()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21common.inc/function/_backdrop_bootstrap_full/1) function does just that.
 
 ### Requires a ton of files
 
 ```php
-require_once DRUPAL_ROOT . '/' . variable_get('path_inc', 'includes/path.inc');
-require_once DRUPAL_ROOT . '/includes/theme.inc';
-require_once DRUPAL_ROOT . '/includes/pager.inc';
-require_once DRUPAL_ROOT . '/' . variable_get('menu_inc', 'includes/menu.inc');
-require_once DRUPAL_ROOT . '/includes/tablesort.inc';
-require_once DRUPAL_ROOT . '/includes/file.inc';
-require_once DRUPAL_ROOT . '/includes/unicode.inc';
-require_once DRUPAL_ROOT . '/includes/image.inc';
-require_once DRUPAL_ROOT . '/includes/form.inc';
-require_once DRUPAL_ROOT . '/includes/mail.inc';
-require_once DRUPAL_ROOT . '/includes/actions.inc';
-require_once DRUPAL_ROOT . '/includes/ajax.inc';
-require_once DRUPAL_ROOT . '/includes/token.inc';
-require_once DRUPAL_ROOT . '/includes/errors.inc';
+require_once BACKDROP_ROOT . '/' . settings_get('path_inc', 'core/includes/path.inc');
+require_once BACKDROP_ROOT . '/core/includes/theme.inc';
+require_once BACKDROP_ROOT . '/core/includes/pager.inc';
+require_once BACKDROP_ROOT . '/' . settings_get('menu_inc', 'core/includes/menu.inc');
+require_once BACKDROP_ROOT . '/core/includes/tablesort.inc';
+require_once BACKDROP_ROOT . '/core/includes/file.inc';
+require_once BACKDROP_ROOT . '/core/includes/unicode.inc';
+require_once BACKDROP_ROOT . '/core/includes/image.inc';
+require_once BACKDROP_ROOT . '/core/includes/form.inc';
+require_once BACKDROP_ROOT . '/core/includes/mail.inc';
+require_once BACKDROP_ROOT . '/core/includes/actions.inc';
+require_once BACKDROP_ROOT . '/core/includes/ajax.inc';
+require_once BACKDROP_ROOT . '/core/includes/token.inc';
+require_once BACKDROP_ROOT . '/core/includes/errors.inc';
 ```
 
 All that stuff that we haven't needed yet but may need after this, we require here, just in case. That way, we're not having to load `ajax.inc` on the fly if we happen to be using AJAX later, or `mail.inc` on the fly if we happen to be sending an email.
@@ -459,11 +462,11 @@ drupal_static_reset('drupal_alter');
 And finally, it adds some info to JS about the theme that's being used, so that if an AJAX request comes along later, it will know to use the same theme.
 
 ```php
-$setting ['ajaxPageState'] = array(
+$setting['ajaxPageState'] = array(
   'theme' => $theme_key,
   'theme_token' => drupal_get_token($theme_key),
 );
-drupal_add_js($setting, 'setting');
+backdrop_add_js($setting, 'setting');
 ```
 
 ### A couple other miscellaneous setup tasks
