@@ -80,6 +80,14 @@ The [`backdrop_settings_initialize()`](https://docs.backdropcms.org/api/backdrop
 2. It creates many of our favorite global variables, such as `$cookie_domain`, `$conf`, `$is_https`, and more!
 3. It sets the name of the session cookie. PHP, by default, stores the session id in a cookie named PHPSESSID. Backdrop instead builds a cookie name that starts with the substring SESS and ends with a hash of the cookie domain.
 
+### Load configuration
+
+```php
+$config_storage = config_get_config_storage('active');
+```
+
+By default, configuration is stored in JSON files in a config directory. It loads this directory so it can be accessed. There is also an option of storing configuration in the database, which means this line also has to bootstrap the database if needed.
+
 And that's the end of the CONFIGURATION bootstrap. 1 down, 7 to go!
 
 ## 2. `BACKDROP_BOOTSTRAP_PAGE_CACHE`
@@ -118,17 +126,8 @@ So assuming you don't have `$conf['page_cache_without_database'] = TRUE` in your
 
 ### Blocks any IP blacklisted users
 
-```php
-drupal_block_denied(ip_address());
-```
+**NOTE: Removed from Backdrop
 
-**NOTE** Removed from Backdrop.
-
-This does exactly what you'd expect - checks to see if the user's IP address is in the list of blacklisted addresses, and if so, returns a `403 Forbidden` response. This doesn't strictly have anything to do with caching, except for the fact that it needs to block cached responses from blacklisted users and this is its last chance to do that.
-
-An interesting thing to note here is that the [`ip_address()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/ip_address/1) function is super useful. On a normal site it just returns regular old `$_SERVER['REMOTE_ADDR']`, but if you're using some sort of reverse proxy in front of Backdrop (meaning `$_SERVER['REMOTE_ADDR']` will always be the same), then it fetches the user's IP from the (configurable) HTTP header. Pretty awesome. 
-
-But beware that if you have `$conf['page_cache_without_database'] = TRUE` in `settings.php` then it won't fetch blocked IPs from the database, because it wouldn't have bootstrapped `BACKDROP_BOOTSTRAP_VARIABLES` yet (re-read the previous section to see what I mean). Tricky, tricky!
 
 ### Checks to see if there's a session cookie
 
@@ -167,9 +166,14 @@ An interesting situation occurs in a single sign on scenario. When the user is l
       }
 ```
 
-Your particular implementation of hook_boot() can test for a shared cookie (or other condition like a header injected by a proxy), and then force Backdrop to continue with a full bootstrap. See the implementation in the bakery conrib module for a good example of this.
-We'll take a deeper look at this function once we get to the module
-chapter.
+Your particular implementation of hook_boot() can test for a shared cookie (or other condition like a header injected by a proxy), and then force Backdrop to continue with a full bootstrap. See the implementation in the bakery contrib module for a good example of this. hook_boot() is also where a module can block or ban users before the whole page is served. An example of this is the ban_ip module, something which was fomerly included in Drupal 7 core with:
+
+```php
+drupal_block_denied(ip_address());
+```
+An interesting thing to note here is that the [`ip_address()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/ip_address/1) function is super useful. On a normal site it just returns regular old `$_SERVER['REMOTE_ADDR']`, but if you're using some sort of reverse proxy in front of Backdrop (meaning `$_SERVER['REMOTE_ADDR']` will always be the same), then it fetches the user's IP from the (configurable) HTTP header. Pretty awesome. 
+
+We'll take a deeper look at this function once we get to the module chapter.
 
 ### Serves the response from that cache
 
@@ -242,12 +246,14 @@ The two lines of code here don't actually acquire any locks, they just initializ
 
 ### Load variables from the database
 
+**NOTE: this is deprecated but still included to provide some backwards-compatibility with Drupal 7's variables.**
+
 ```php
 global $conf;
 $conf = variable_initialize(isset($conf) ? $conf : array());
 ```
 
-The [`variable_initialize()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/variable_initialize/7) function basically just returns everything from the `variables` database table, which in this case adds it all to the global `$conf` array, so that we can `variable_get()` things from it later.
+The [`variable_initialize()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/variable_initialize/1) function basically just returns everything from the `variables` database table, which in this case adds it all to the global `$conf` array, so that we can `variable_get()` things from it later.
 
 But there are a few important details:
 
@@ -256,6 +262,10 @@ But there are a few important details:
 3. Once it has the lock acquired, it grabs everything from the `variables` table.
 4. Then it caches all of that, so that step 1 won't fail next time.
 5. Finally, it releases the lock.
+
+### Load states from the persistent state table
+
+
 
 ### Load all "bootstrap mode" modules
 
@@ -328,21 +338,21 @@ This part's tricky. Backdrop lazily starts sessions at the end of the request, s
 session_id(backdrop_random_key());
 ```
 
-I won't go in detail here since we're talking about the bootstrap, but at the end of the request, `backdrop_page_footer()` or `backdrop_exit()` (depending on which one is responsible for closing this particular request) will call [`drupal_session_commit()`](https://api.drupal.org/api/drupal/includes%21session.inc/function/drupal_session_commit/7), which checks to see if there's anything in $_SESSION that we need to save to the database, and will run `drupal_session_start()` if so.
+I won't go in detail here since we're talking about the bootstrap, but at the end of the request, `backdrop_page_footer()` or `backdrop_exit()` (depending on which one is responsible for closing this particular request) will call [`backdrop_session_commit()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21session.inc/function/backdrop_session_commit/1), which checks to see if there's anything in $_SESSION that we need to save to the database, and will run `backdrop_session_start()` if so.
 
 ### Sets PHP's default timezone from the user's timezone
 
 ```php
-date_default_timezone_set(drupal_get_user_timezone());
+date_default_timezone_set(backdrop_get_user_timezone());
 ```
 
 You may remember that the cache bootstrap above was responsible for setting the timezone for cached pages. This is where the timezone gets set for uncached pages. 
 
-The [`drupal_get_user_timezone()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_get_user_timezone/7) is very simple. It just checks to see if user-configurable timezones are enabled and the user has one set, and uses that if so, otherwise it falls back to the site's default timezone setting.
+The [`backdrop_get_user_timezone()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_get_user_timezone/1) is very simple. It just checks to see if user-configurable timezones are enabled and the user has one set, and uses that if so, otherwise it falls back to the site's default timezone setting.
 
 ## 6. `BACKDROP_BOOTSTRAP_PAGE_HEADER`
 
-This is probably the simplest of the bootstrap levels. It does 2 very simple things in the [`_drupal_bootstrap_page_header()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/_drupal_bootstrap_page_header/7) function.
+This is probably the simplest of the bootstrap levels. It does 2 very simple things in the [`_backdrop_bootstrap_page_header()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/_backdrop_bootstrap_page_header/1) function.
 
 ### Invokes hook_boot()
 
@@ -354,18 +364,18 @@ If you've ever wondered how much of the bootstrap process has to complete before
 
 ### Sends initial HTTP headers 
 
-There's a little bit of a call stack here. `drupal_page_header()` calls `drupal_send_headers()` which calls `drupal_get_http_header()` to finally fetch the headers that it needs to send.
+There's a little bit of a call stack here. `backdrop_page_header()` calls `backdrop_send_headers()` which calls `backdrop_get_http_header()` to finally fetch the headers that it needs to send.
 
-Note that in this run, it just sends a couple default headers (`Expires` and `Cache-Control`), but the interesting part is that static caches are used throughout, and anything can call [`drupal_add_http_header()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_add_http_header/7) later on down the line, which will also call `drupal_send_headers()`. This allows you to append or replace existing headers before they actually get sent anywhere.
+Note that in this run, it just sends a couple default headers (`Expires` and `Cache-Control`), but the interesting part is that static caches are used throughout, and anything can call [`backdrop_add_http_header()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_add_http_header/1) later on down the line, which will also call `backdrop_send_headers()`. This allows you to append or replace existing headers before they actually get sent anywhere.
 
 
 ## 7. `BACKDROP_BOOTSTRAP_LANGUAGE`
 
-In this level, the [`drupal_language_initialize()`](https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/drupal_language_initialize/7) function is called. This function only really does anything if we're talking about a multilingual site. It checks `drupal_multilingual()` which just returns `TRUE` if the list of languages is greater than 1, and false otherwise.
+In this level, the [`backdrop_language_initialize()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_language_initialize/1) function is called. This function only really does anything if we're talking about a multilingual site. It checks `language_multilingual()` which just returns `TRUE` if the list of languages is greater than 1, and false otherwise.
 
 If it's not a multilingual site, it cuts out then.
 
-If it is a multilingual site, then it initializes the system using `language_initialize()` for each of the language types that been configured, and then runs all `hook_language_init()` implementations. 
+If it is a multilingual site, then it initializes the system using `language_initialize()` for each of the language types that been configured, and then runs all `hook_language_init()` implementations.
 
 This is a good time to note that the language system is complicated and confusing, with a web of "language types" (such as `LANGUAGE_TYPE_INTERFACE` and `LANGUAGE_TYPE_CONTENT`) and "language providers", and of course actual languages. It deserves a chapter of its own, so I'm not going to go into any more detail here.
 
@@ -397,39 +407,39 @@ All that stuff that we haven't needed yet but may need after this, we require he
 
 ### Load all enabled modules
 
-The [`module_load_all()`](https://api.drupal.org/api/drupal/includes%21module.inc/function/module_load_all/7) does exactly what you'd expect - grabs the name of every enabled module using `module_list()` and then runs `drupal_load()` on it to load it. There's also a static cache in this function so that it only runs once per request.
+The [`module_load_all()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21module.inc/function/module_load_all/1) does exactly what you'd expect - grabs the name of every enabled module using `module_list()` and then runs `backdrop_load()` on it to load it. There's also a static cache in this function so that it only runs once per request.
 
 ### Registers stream wrappers
 
-The [`file_get_stream_wrappers()`](https://api.drupal.org/api/drupal/includes%21file.inc/function/file_get_stream_wrappers/7) has a lot of meat to it, but it's all details around a fairly simple task.
+The [`file_get_stream_wrappers()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21file.inc/function/file_get_stream_wrappers/1) has a lot of meat to it, but it's all details around a fairly simple task.
 
 At a high level, it's grabbing all stream wrappers using `hook_stream_wrappers()`, allowing the chance to alter them using `hook_stream_wrappers_alter()`, and then registering (or overriding) each of them using `stream_wrapper_register()`, which is a plain old PHP function. It then sticks the result in a static cache so that it only runs all of this once per request.
 
 ### Initializes the path
 
-The [`drupal_path_initialize()`](https://api.drupal.org/api/drupal/includes%21path.inc/function/drupal_path_initialize/7) function is called which just makes sure that `$_GET['q']` is setup (if it's not, then it sets it to the frontpage), and then runs it through [`drupal_get_normal_path()`](https://api.drupal.org/api/drupal/includes%21path.inc/function/drupal_get_normal_path/7) to see if it's a path alias, and if so, replace it with the internal path. 
+The [`backdrop_path_initialize()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21path.inc/function/backdrop_path_initialize/1) function is called which just makes sure that `$_GET['q']` is setup (if it's not, then it sets it to the frontpage), and then runs it through [`backdrop_get_normal_path()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21path.inc/function/backdrop_get_normal_path/1) to see if it's a path alias, and if so, replace it with the internal path. 
 
-This also gives modules a chance to alter the inbound URL. Before `drupal_get_normal_path()` returns the path, it calls all implementations of `hook_url_inbound_alter()` to do just that.
+This also gives modules a chance to alter the inbound URL. Before `backdrop_get_normal_path()` returns the path, it calls all implementations of `hook_url_inbound_alter()` to do just that.
 
 ### Sets and initializes the site theme
 
 ```php
 menu_set_custom_theme();
-drupal_theme_initialize();
+backdrop_theme_initialize();
 ```
 
 These two fairly innocent looking functions are NOT messing around. 
 
-The purpose of [`menu_set_custom_theme()`](https://api.drupal.org/api/drupal/includes%21menu.inc/function/menu_set_custom_theme/7) is to allow modules or theme callbacks to dynamically set the theme that should be used to render the current page. To do this, it  calls [`menu_get_custom_theme(TRUE)`](https://api.drupal.org/api/drupal/includes%21menu.inc/function/menu_get_custom_theme/7), which is a bit scary looking, but doesn't do anything important besides that and saving the result to a static cache.
+The purpose of [`menu_set_custom_theme()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21menu.inc/function/menu_set_custom_theme/1) is to allow modules or theme callbacks to dynamically set the theme that should be used to render the current page. To do this, it  calls [`menu_get_custom_theme(TRUE)`](https://docs.backdropcms.org/api/backdrop/core%21includes%21menu.inc/function/menu_get_custom_theme/1), which is a bit scary looking, but doesn't do anything important besides that and saving the result to a static cache.
 
-After that, the [`drupal_theme_initialize()`](https://api.drupal.org/api/drupal/includes%21theme.inc/function/drupal_theme_initialize/7) comes along and goes to town.
+After that, the [`backdrop_theme_initialize()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21theme.inc/function/backdrop_theme_initialize/1) comes along and goes to town.
 
-First, it just loads all themes using [`list_themes()`](https://api.drupal.org/api/drupal/includes%21theme.inc/function/list_themes/7), which is where the `.info` file for each theme gets parsed and the lists of CSS files, JS files, regions, etc., get populated.
+First, it just loads all themes using [`list_themes()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21theme.inc/function/list_themes/1), which is where the `.info` file for each theme gets parsed and the lists of CSS files, JS files, regions, etc., get populated.
 
 Secondly, it tries to find the theme to use by checking to see if the user has a custom theme set, and if not, falling back to the `theme_default` variable.
 
 ```php
-$theme = !empty($user->theme) && drupal_theme_access($user->theme) ? 
+$theme = !empty($user->theme) && backdrop_theme_access($user->theme) ? 
   $user->theme : variable_get('theme_default', 'bartik');
 ```
 
@@ -451,12 +461,12 @@ while ($ancestor && isset($themes [$ancestor]->base_theme)) {
 }
 ```
 
-It needs that list because it needs to initialize any ancestor themes along with the main theme, so that theme inheritance can work. So then it runs [`_drupal_theme_initialize`](https://api.drupal.org/api/drupal/includes%21theme.inc/function/_drupal_theme_initialize/7) on each of them, which adds the necessary CSS and JS, and then initializes the correct theme engine, if needed.
+It needs that list because it needs to initialize any ancestor themes along with the main theme, so that theme inheritance can work. So then it runs [`_backdrop_theme_initialize`](https://docs.backdropcms.org/api/backdrop/core%21includes%21theme.inc/function/_backdrop_theme_initialize/1) on each of them, which adds the necessary CSS and JS, and then initializes the correct theme engine, if needed.
 
-After that, it resets the `drupal_alter` cache, because themes can have alter hooks, and we wouldn't want to ignore them becuase we had already built the cache by now.
+After that, it resets the `backdrop_alter` cache, because themes can have alter hooks, and we wouldn't want to ignore them becuase we had already built the cache by now.
 
 ```
-drupal_static_reset('drupal_alter');
+backdrop_static_reset('backdrop_alter');
 ```
 
 And finally, it adds some info to JS about the theme that's being used, so that if an AJAX request comes along later, it will know to use the same theme.
@@ -464,7 +474,7 @@ And finally, it adds some info to JS about the theme that's being used, so that 
 ```php
 $setting['ajaxPageState'] = array(
   'theme' => $theme_key,
-  'theme_token' => drupal_get_token($theme_key),
+  'theme_token' => backdrop_get_token($theme_key),
 );
 backdrop_add_js($setting, 'setting');
 ```
