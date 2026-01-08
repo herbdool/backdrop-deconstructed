@@ -6,11 +6,11 @@ In Part 1, we'll keep it fairly high level and walk through the path a request t
 
 ## Step 0: Some background information
 
-For this example, let's pretend that George, a user of your site, wants to visit your About Us page, which lives at `http://oursite/about-us`. 
+For this example, let's pretend that George, a user of your site, wants to visit your About Us page, which lives at `http://oursite/about-us`.
 
 Let's also pretend that this page is a node (specifically, the node with `nid` of `1`) with a URL alias of `about-us`.
 
-And to keep things simple, we'll say that we're using Apache as our webserver, and there's nothing fancy sitting in front of Backdrop, such as a caching layer or the like. 
+And to keep things simple, we'll say that we're using Apache as our webserver, and there's nothing fancy sitting in front of Backdrop, such as a caching layer or the like.
 
 **So basically, we're talking about a plain old Backdrop site on a plain old webserver.**
 
@@ -18,11 +18,11 @@ And to keep things simple, we'll say that we're using Apache as our webserver, a
 
 There's some pretty hot action that happens before Backdrop even sees the request. George's browser sends a request to `http://oursite.com/about-us`, and this thing we call the internet figures out that that should go to our server. If you're not well versed on how that part happens, you may benefit from reading [this infographic on how the internet works](http://i.imgur.com/fzY1Arg.jpg).
 
-Once our server has received the request, that's when the fun begins. This request will land on port `80`, and Apache just so happens to be listening on that port, so Apache will immediately see the request and decide what to do with it. 
+Once our server has received the request, that's when the fun begins. This request will land on port `80`, and Apache just so happens to be listening on that port, so Apache will immediately see the request and decide what to do with it.
 
 Since the request is going to `oursite.com` then Apache can look into its configuration files to see what the root directory is for `oursite.com` (along with lots of other info about it which is out of scope for this post). We'll say that the root directory for our site is `/var/www/oursite`, which is where Backdrop lives. So Apache is going to send the request there.
 
-## Step 2: The .htaccess file 
+## Step 2: The .htaccess file
 
 But Backdrop hasn't taken over just yet. Backdrop ships with a `.htaccess` file which is a way of telling Apache some things. In fact, Backdrop's `.htaccess` tells Apache a whole lot of things. The most important things it does are:
 
@@ -58,7 +58,7 @@ In our case, this means that `BACKDROP_ROOT` gets set to `/var/www/oursite`.
 
 ```php
 require_once BACKDROP_ROOT . '/core/includes/bootstrap.inc';
-backdrop_bootstrap(DRUPAL_BOOTSTRAP_FULL);
+backdrop_bootstrap(BACKDROP_BOOTSTRAP_FULL);
 ```
 
 These lines run a full Backdrop bootstrap, which basically means that they tell Backdrop "Hey, grab all of the stuff you're going to need before we can get to actually handling this request."
@@ -71,6 +71,6 @@ These lines run a full Backdrop bootstrap, which basically means that they tell 
 menu_execute_active_handler();
 ```
 
-This simple looking function is where the heart and soul of Backdrop lives. 
+This simple looking function is where the heart and soul of Backdrop lives.
 
 **For more information about what happens in this ball of wax, visit Part 3 of this series.**

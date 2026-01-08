@@ -1,5 +1,6 @@
 # Javascript and AJAX
 
 Coming soon...
-In the meantime, the Drupal.org documentation for the [Drupal Javascript API](https://www.drupal.org/node/304258)
-has a very good overview of the relevant bits of the drupal.js file.
+
+In the meantime, Backdrop CMS documentation for the [Backdrop Javascript API](https://docs.backdropcms.org/documentation/using-javascript)
+has a very good overview of the relevant bits.

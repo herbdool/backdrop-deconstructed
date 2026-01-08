@@ -2,9 +2,9 @@
 
 **Note: this chapter is not yet complete!**
 
-Nodes are Drupal's most basic content unit. Traditionally in Drupal every type of content like a page or blog post is a node, although in Drupal 7 it is not strictly necessary to use nodes when something like a Views Page or an Entity record might be more suitable. Modules can define their own node types as well.
+Nodes are Backdrop's most basic content unit. Traditionally in Backdrop every type of content like a page or blog post is a node, although in Backdrop it is not strictly necessary to use nodes when something like a Views Page or an Entity record might be more suitable. Modules can define their own node types as well.
 
-Here are the <a href="https://www.drupal.org/node/49768">default properties of Drupal 7 node objects from the official documentation</a>. Generally all these properties are available in the theme layer when working with node displays:
+Here are the default properties of Backdrop node objects from the official documentation. Generally all these properties are available in the theme layer when working with node displays:
 
 <table>
   <tr>
@@ -111,14 +111,10 @@ Here are the <a href="https://www.drupal.org/node/49768">default properties of D
     <td>$node->data</td>
     <td>Serialized string of data associated with the node.</td>
   </tr>
-  <tr>
-    <td>$node->rdf_mapping</td>
-    <td>W3C standard to describe structured data. See http://api.drupal.org/api/drupal/modules!rdf!rdf.module/group/rdf/7</td>
-  </tr>
 </table>
 
 ## Adding properties to nodes
 
-To <a href="http://drupal.stackexchange.com/questions/78325/how-to-create-a-new-properties-to-node-or-user-and-so-on">create a new property on a node</a> programmatically, the <a href="https://drupal.org/project/entity">Entity API</a> module can be very helpful. The <a href="http://www.drupalcontrib.org/api/drupal/contributions!entity!entity.api.php/function/hook_entity_property_info/7">hook_entity_property_info</a> hook lets you set up the metadata properties. The <a href="http://www.drupalcontrib.org/api/drupal/contributions!entity!modules!node.info.inc/function/entity_metadata_node_entity_property_info/7">entity_metadata_node_entity_property_info</a> function implements hook_entity_property_info() on top of the node module, for default node property definitions.
+To <a href="http://drupal.stackexchange.com/questions/78325/how-to-create-a-new-properties-to-node-or-user-and-so-on">create a new property on a node</a> programmatically, the <a href="https://drupal.org/project/entity">Entity API</a> module can be very helpful. The <a href="http://www.drupalcontrib.org/api/backdrop/contributions!entity!entity.api.php/function/hook_entity_property_info/7">hook_entity_property_info</a> hook lets you set up the metadata properties. The <a href="http://www.drupalcontrib.org/api/backdrop/contributions!entity!modules!node.info.inc/function/entity_metadata_node_entity_property_info/7">entity_metadata_node_entity_property_info</a> function implements hook_entity_property_info() on top of the node module, for default node property definitions.
 
 You can find more documentation in the <a href="http://drupal.org/node/878784">Entity API handbooks</a>. Also check the <a href="http://drupalcode.org/project/entity.git/blob/refs/heads/7.x-1.x:/README.txt">README</a> and the provided API docs in <a href="http://drupalcode.org/project/entity.git/blob/refs/heads/7.x-1.x:/entity.api.php"><code>entity.api.php</code></a>.

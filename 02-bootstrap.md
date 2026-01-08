@@ -40,7 +40,7 @@ These functions each go a few levels deep, but all they're really doing is attem
 backdrop_environment_initialize()
 ```
 
-The [`backdrop_environment_initialize()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_environment_initialize/1) function called here does a lot, most of which isn't very interesting. For example: 
+The [`backdrop_environment_initialize()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_environment_initialize/1) function called here does a lot, most of which isn't very interesting. For example:
 
 - It tinkers with the global `$_SERVER` array a little bit.
 - It sets the configuration for error reporting
@@ -54,7 +54,7 @@ That said, it does have this nugget:
 $_GET ['q'] = request_path();
 ```
 
-It might not look like much, but this is what makes Clean URLs work. We always need `$_GET['q']` to be set to the current path because `$_GET['q']` is used all over the place. If you have Clean URLs disabled, then that happens by default, because your URLs look like `yoursite.com/?q=about-us`. So the line of code above will call [`request_path()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/request_path/1), which sees that `$_GET['q']` already exists, and returns it directly. 
+It might not look like much, but this is what makes Clean URLs work. We always need `$_GET['q']` to be set to the current path because `$_GET['q']` is used all over the place. If you have Clean URLs disabled, then that happens by default, because your URLs look like `yoursite.com/?q=about-us`. So the line of code above will call [`request_path()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/request_path/1), which sees that `$_GET['q']` already exists, and returns it directly.
 
 But if you have Clean URLs enabled (you do, right?), and your URLs look like `yoursite.com/about-us`, then `$_GET['q']` is empty by default, and that just won't do. To fix that, it gets populated with the value of [`request_path()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/request_path/1), which basically just cleans up the result of `$_SERVER['REQUEST_URI']` (i.e., removes query strings as well as script filenames such as `index.php` or `cron.php`) and returns that.
 
@@ -64,7 +64,7 @@ But if you have Clean URLs enabled (you do, right?), and your URLs look like `yo
 timer_start('page');
 ```
 
-This is actually pretty nifty. Backdrop has a global `$timers` variable that many people don't know about. 
+This is actually pretty nifty. Backdrop has a global `$timers` variable that many people don't know about.
 
 Here, a timer is started so that the time it takes to render the page can be measured.
 
@@ -103,7 +103,7 @@ foreach (settings_get('cache_backends', array()) as $include) {
 }
 ```
 
-This bit of fanciness allows us to specify our own cache backend(s) instead of using Backdrop's database cache. 
+This bit of fanciness allows us to specify our own cache backend(s) instead of using Backdrop's database cache.
 
 This is most commonly used to support memcache, but someone could really go to town with this if they wanted, just by specifying (in the `$conf` array in `settings.php`) an include file to use (such as `memcache.inc`) for whatever cache backend they're wanting to use.
 
@@ -148,7 +148,7 @@ What's inside that "fetch and return cached response" block? Lots of stuff!
 $user = backdrop_anonymous_user();
 ```
 
-The [`backdrop_anonymous\_user()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_anonymous_user/1) function just creates an empty user object with a `uid` of 0.  We're creating it here just because it may need to be used later on down the line, such as in some `hook_boot()` implementation, and also because its timestamp will be checked and possibly logged.
+The [`backdrop_anonymous_user()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_anonymous_user/1) function just creates an empty user object with a `uid` of 0.  We're creating it here just because it may need to be used later on down the line, such as in some `hook_boot()` implementation, and also because its timestamp will be checked and possibly logged.
 
 ### Checks to see if the page is already cached
 
@@ -160,7 +160,7 @@ The [`backdrop_page_get_cache()`](https://docs.backdropcms.org/api/backdrop/core
 
 An interesting situation occurs in a single sign on scenario. When the user is logged into the master site, but is visiting a particular Backdrop site in the site family for the first time, that user will not have a session cookie on that particular site. This situation is one of the major use cases for `hook_boot()`, which is invoked immediately prior to trying to serve the cached page.
 
-```
+```php
       if (settings_get('page_cache_invoke_hooks', TRUE)) {
         bootstrap_invoke_all('boot');
       }
@@ -171,7 +171,8 @@ Your particular implementation of hook_boot() can test for a shared cookie (or o
 ```php
 drupal_block_denied(ip_address());
 ```
-An interesting thing to note here is that the [`ip_address()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/ip_address/1) function is super useful. On a normal site it just returns regular old `$_SERVER['REMOTE_ADDR']`, but if you're using some sort of reverse proxy in front of Backdrop (meaning `$_SERVER['REMOTE_ADDR']` will always be the same), then it fetches the user's IP from the (configurable) HTTP header. Pretty awesome. 
+
+An interesting thing to note here is that the [`ip_address()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/ip_address/1) function is super useful. On a normal site it just returns regular old `$_SERVER['REMOTE_ADDR']`, but if you're using some sort of reverse proxy in front of Backdrop (meaning `$_SERVER['REMOTE_ADDR']` will always be the same), then it fetches the user's IP from the (configurable) HTTP header. Pretty awesome.
 
 We'll take a deeper look at this function once we get to the module chapter.
 
@@ -186,7 +187,7 @@ If `$cache` from the previous section isn't empty, then we have officially found
 - Serves the page from cache, using [`backdrop_serve_page_from_cache($cache)`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_serve_page_from_cache/1), which is scary looking but basically just adds some headers and prints the cache data (i.e., the page body).
 - Runs all implementations of `hook_exit()`, if the `page_cache_invoke_hooks` variable isn't set to FALSE.
 
-And FINALLY, once all of that is complete, it runs `exit;` and we're done, assuming we got this far. 
+And FINALLY, once all of that is complete, it runs `exit;` and we're done, assuming we got this far.
 
 Otherwise, it doesn't do any of the above, and just sets the `X-Backdrop-Cache: MISS` header.
 
@@ -209,7 +210,7 @@ Nothing fancy. If we don't have anything in `$GLOBALS ['databases']` and we have
 
 ### Includes the `database.inc` file
 
-This beautiful beautiful [`database.inc`](https://docs.backdropcms.org/api/backdrop/core%21includes%21database%21database.inc/1) file includes all of the database abstraction functions that we know and love, such as `db_query()` and `db_select()` and `db_update()`. 
+This beautiful beautiful [`database.inc`](https://docs.backdropcms.org/api/backdrop/core%21includes%21database%21database.inc/1) file includes all of the database abstraction functions that we know and love, such as `db_query()` and `db_select()` and `db_update()`.
 
 It also holds the base `Database` and `DatabaseConnection` and `DatabaseTransaction` classes (among a bunch of others).
 
@@ -221,7 +222,7 @@ It's a 3000+ line file, so it's out of scope for a discussion on bootstrapping, 
 spl_autoload_register('backdrop_autoload');
 ```
 
-This is just a tricky way of ensuring that a class or interface actually exists, when we try to autoload one. [`backdrop_autoload()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_autoload/1) calls [`hook_autoload_info()`](https://docs.backdropcms.org/api/backdrop/core%21modules%21system%21system.api.php/function/hook_autoload_info/1), which loads all classes and interfaces defined in that hook across all enabled modules. 
+This is just a tricky way of ensuring that a class or interface actually exists, when we try to autoload one. [`backdrop_autoload()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_autoload/1) calls [`hook_autoload_info()`](https://docs.backdropcms.org/api/backdrop/core%21modules%21system%21system.api.php/function/hook_autoload_info/1), which loads all classes and interfaces defined in that hook across all enabled modules.
 
 If it finds the class or interface, it will `require_once` the file that contains that class or interface and return `TRUE`. Otherwise, it just returns `FALSE` so Backdrop knows that somebody screwed the pooch and we're looking for a class or interface that doesn't exist.
 
@@ -229,7 +230,7 @@ So, in English, it's saying "*Ok, it looks like you're trying to autoload a clas
 
 ## 4. `BACKDROP_BOOTSTRAP_VARIABLES`
 
-This one just calls [`_backdrop_bootstrap_variables()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/_backdrop_bootstrap_variables/1), which actually does a good bit more than just including the variables from the variables table. 
+This one just calls [`_backdrop_bootstrap_variables()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/_backdrop_bootstrap_variables/1), which actually does a good bit more than just including the variables from the variables table.
 
 Here's what it does:
 
@@ -258,7 +259,7 @@ The [`variable_initialize()`](https://docs.backdropcms.org/api/backdrop/core%21i
 But there are a few important details:
 
 1. It tries to load from the cache first, by looking for the `variables` cache ID in the `cache_bootstrap` table.
-2. Assuming the cache failed, it tries to acquire a lock to avoid a stampede if a ton of requests are all trying to grab the `variables` table at the same time. 
+2. Assuming the cache failed, it tries to acquire a lock to avoid a stampede if a ton of requests are all trying to grab the `variables` table at the same time.
 3. Once it has the lock acquired, it grabs everything from the `variables` table.
 4. Then it caches all of that, so that step 1 won't fail next time.
 5. Finally, it releases the lock.
@@ -274,15 +275,15 @@ require_once BACKDROP_ROOT . '/core/includes/module.inc';
 module_load_all(TRUE);
 ```
 
-Note that this may seem scary (OH MY GOD we're loading every single module just to bootstrap the variables!) but it's not. That `TRUE` is a big deal, because that tells Backdrop to only load the "bootstrap" modules. A "bootstrap" module is a module that has the `bootstrap` column in the `system` table set to 1 for it. 
+Note that this may seem scary (OH MY GOD we're loading every single module just to bootstrap the variables!) but it's not. That `TRUE` is a big deal, because that tells Backdrop to only load the "bootstrap" modules. A "bootstrap" module is a module that has the `bootstrap` column in the `system` table set to 1 for it.
 
 On the typical Backdrop site, this will only be a handful of modules that are specifically required this early in the bootstrap, like the Syslog module or the System module, or some contrib modules like Redirect or Variable.
 
 ### Sanitize the `destination` URL parameter
 
-Here's another one that you wouldn't expect to happen as part of bootstrapping variables. 
+Here's another one that you wouldn't expect to happen as part of bootstrapping variables.
 
-The `$_GET['destination']` parameter needs to be protected against open redirect attacks leading to other domains. So what we do here is to check to see if it's set to an external URL, and if so, we unset it. 
+The `$_GET['destination']` parameter needs to be protected against open redirect attacks leading to other domains. So what we do here is to check to see if it's set to an external URL, and if so, we unset it.
 
 The reason we have to wait for the variables bootstrap for this is that we need to call the [`url_is_external()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21common.inc/function/url_is_external/1) function to check the destination URL, and that function calls [`backdrop_strip_dangerous_protocols()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21common.inc/function/backdrop_strip_dangerous_protocols/1) which has a variable to store the list of allowed protocols.
 
@@ -295,8 +296,8 @@ Bootstrapping the session means requiring the `session.inc` file and then runnin
 The first thing that happens here is that Backdrop registers custom session handlers with PHP:
 
 ```php
-session_set_save_handler('_backdrop_session_open', '_backdrop_session_close', 
-  '_backdrop_session_read', '_backdrop_session_write', 
+session_set_save_handler('_backdrop_session_open', '_backdrop_session_close',
+  '_backdrop_session_read', '_backdrop_session_write',
   '_backdrop_session_destroy', '_backdrop_session_garbage_collection');
 ```
 
@@ -304,7 +305,7 @@ session_set_save_handler('_backdrop_session_open', '_backdrop_session_close',
 
 If you've never seen the [`session_set_save_handler()`](http://php.net/session_set_save_handler) PHP function before, it just allows you to set your own custom session storage functions, so that you can have full control over what happens when sessions are opened, closed, read, written, destroyed, or garbage collected. As you can see above, Backdrop implements its own handlers for all 6 of those.
 
-What does Backdrop actually do in those 6 handler functions? 
+What does Backdrop actually do in those 6 handler functions?
 
 - `_backdrop_session_open()` and `_backdrop_session_close()` both literally just `return TRUE;`.
 - `_backdrop_session_read()` fetches the session from the `sessions` table, and does a join on the `users` table to include the user data along with it.
@@ -346,7 +347,7 @@ I won't go in detail here since we're talking about the bootstrap, but at the en
 date_default_timezone_set(backdrop_get_user_timezone());
 ```
 
-You may remember that the cache bootstrap above was responsible for setting the timezone for cached pages. This is where the timezone gets set for uncached pages. 
+You may remember that the cache bootstrap above was responsible for setting the timezone for cached pages. This is where the timezone gets set for uncached pages.
 
 The [`backdrop_get_user_timezone()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21bootstrap.inc/function/backdrop_get_user_timezone/1) is very simple. It just checks to see if user-configurable timezones are enabled and the user has one set, and uses that if so, otherwise it falls back to the site's default timezone setting.
 
@@ -362,7 +363,7 @@ bootstrap_invoke_all('boot');
 
 If you've ever wondered how much of the bootstrap process has to complete before you can be guaranteed that hook_boot will run, there's your answer. Remember that for cached pages, it will have already run back in the cache bootstrap, but for uncached pages, this is where it happens.
 
-### Sends initial HTTP headers 
+### Sends initial HTTP headers
 
 There's a little bit of a call stack here. `backdrop_page_header()` calls `backdrop_send_headers()` which calls `backdrop_get_http_header()` to finally fetch the headers that it needs to send.
 
@@ -417,7 +418,7 @@ At a high level, it's grabbing all stream wrappers using `hook_stream_wrappers()
 
 ### Initializes the path
 
-The [`backdrop_path_initialize()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21path.inc/function/backdrop_path_initialize/1) function is called which just makes sure that `$_GET['q']` is setup (if it's not, then it sets it to the frontpage), and then runs it through [`backdrop_get_normal_path()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21path.inc/function/backdrop_get_normal_path/1) to see if it's a path alias, and if so, replace it with the internal path. 
+The [`backdrop_path_initialize()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21path.inc/function/backdrop_path_initialize/1) function is called which just makes sure that `$_GET['q']` is setup (if it's not, then it sets it to the frontpage), and then runs it through [`backdrop_get_normal_path()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21path.inc/function/backdrop_get_normal_path/1) to see if it's a path alias, and if so, replace it with the internal path.
 
 This also gives modules a chance to alter the inbound URL. Before `backdrop_get_normal_path()` returns the path, it calls all implementations of `hook_url_inbound_alter()` to do just that.
 
@@ -428,7 +429,7 @@ menu_set_custom_theme();
 backdrop_theme_initialize();
 ```
 
-These two fairly innocent looking functions are NOT messing around. 
+These two fairly innocent looking functions are NOT messing around.
 
 The purpose of [`menu_set_custom_theme()`](https://docs.backdropcms.org/api/backdrop/core%21includes%21menu.inc/function/menu_set_custom_theme/1) is to allow modules or theme callbacks to dynamically set the theme that should be used to render the current page. To do this, it  calls [`menu_get_custom_theme(TRUE)`](https://docs.backdropcms.org/api/backdrop/core%21includes%21menu.inc/function/menu_get_custom_theme/1), which is a bit scary looking, but doesn't do anything important besides that and saving the result to a static cache.
 
@@ -439,7 +440,7 @@ First, it just loads all themes using [`list_themes()`](https://docs.backdropcms
 Secondly, it tries to find the theme to use by checking to see if the user has a custom theme set, and if not, falling back to the `theme_default` variable.
 
 ```php
-$theme = !empty($user->theme) && backdrop_theme_access($user->theme) ? 
+$theme = !empty($user->theme) && backdrop_theme_access($user->theme) ?
   $user->theme : variable_get('theme_default', 'bartik');
 ```
 

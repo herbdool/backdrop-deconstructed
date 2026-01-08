@@ -2,7 +2,7 @@
 
 **Note: this chapter is not yet complete!**
 
-In this chapter, we'll talk about how the bits and pieces of the entity work. We'll walk through what creating an entity type does behind the scenes, how bundles work, how Drupal loads and saves entities, and a bunch of other stuff.
+In this chapter, we'll talk about how the bits and pieces of the entity work. We'll walk through what creating an entity type does behind the scenes, how bundles work, how Backdrop loads and saves entities, and a bunch of other stuff.
 
 But first, let's define some terms.
 
@@ -16,7 +16,7 @@ As a simpler example, an "automobile" could be considered an entity type. It cou
 
 ## Creating an entity type
 
-Let's walk through what happens when we tell Drupal about our custom entity type. We'll be basing this on the code from [entity_example.module](https://api.drupal.org/api/examples/entity_example!entity_example.module/7). 
+Let's walk through what happens when we tell Backdrop about our custom entity type. We'll be basing this on the code from [entity_example.module](https://docs.backdropcms.org/api/examples/entity_example!entity_example.module/1).
 
 The first thing we would do to define our custom entity is to create the database tables needed for it. Here's what `entity_example.install` does, for example:
 
@@ -69,7 +69,7 @@ function entity_example_schema() {
 
 That part should be pretty self-explanatory, since we've already talked about the bits and pieces at work there in the Database chapter.
 
-The second step for us would be to implement [`hook_entity_info()`](https://api.drupal.org/api/drupal/modules%21system%21system.api.php/function/hook_entity_info/7) from a custom module. Our implementation will look something like this (taken from `entity_example.module`:
+The second step for us would be to implement [`hook_entity_info()`](https://docs.backdropcms.org/api/backdrop/modules%21system%21system.api.php/function/hook_entity_info/1) from a custom module. Our implementation will look something like this (taken from `entity_example.module`:
 
 ```php
 function entity_example_entity_info() {
@@ -77,7 +77,7 @@ function entity_example_entity_info() {
     // A human readable label to identify our entity.
     'label' => t('Example Basic Entity'),
 
-    // The controller for our Entity, extending the Drupal core controller.
+    // The controller for our Entity, extending the Backdrop core controller.
     'controller class' => 'EntityExampleBasicController',
 
     // The table for this entity defined in hook_schema()
@@ -102,7 +102,7 @@ function entity_example_entity_info() {
       'bundle' => 'bundle_type',
     ),
 
-    // FALSE disables caching. Caching functionality is handled by Drupal core.
+    // FALSE disables caching. Caching functionality is handled by Backdrop core.
     'static cache' => TRUE,
 
     // Bundles are alternative groups of fields or configuration
@@ -133,9 +133,9 @@ function entity_example_entity_info() {
 }
 ```
 
-With those two steps (the DB tables and the implementation of `hook_entity_info()` have just provided Drupal with a bunch of info about our custom entity, which we are calling `entity_example_basic`. But what does Drupal do with it all?
+With those two steps (the DB tables and the implementation of `hook_entity_info()` have just provided Backdrop with a bunch of info about our custom entity, which we are calling `entity_example_basic`. But what does Backdrop do with it all?
 
-The answer is that Drupal doesn't really do anything immediately. There's no big "DISCOVER MY NEW ENTITY TYPE" button that you have to click to tell Drupal to find your custom entity type. All that you've done is set up the database tables and made the entity type info available for when it does need to be requested. Eventually, something in Drupal core will call [`entity_get_info()`](https://api.drupal.org/api/drupal/includes%21common.inc/function/entity_get_info/7)...WTF HAPPENS HERE??
+The answer is that Backdrop doesn't really do anything immediately. There's no big "DISCOVER MY NEW ENTITY TYPE" button that you have to click to tell Backdrop to find your custom entity type. All that you've done is set up the database tables and made the entity type info available for when it does need to be requested. Eventually, something in Backdrop core will call [`entity_get_info()`](https://docs.backdropcms.org/api/backdrop/includes%21common.inc/function/entity_get_info/1) ...WTF HAPPENS HERE??
 
 ## Creating bundles
 
